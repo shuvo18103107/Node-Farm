@@ -1,7 +1,6 @@
 //import file system module
 const fs = require('fs');
-const http = require('http');
-
+const http = require('http')
 const url = require('url');
 //................ Files..................
 //reading and writing files in sync way (blocking)
@@ -31,27 +30,70 @@ fs.readFile('./txt/start.txt', 'utf-8', (err, data1) => {
 })
 */
 //..................................Server....................
+const replaceTemplate = (temp, product) => {
+    let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName);
+    output = output.replace(/{%QUANTITY%}/g, product.quantity);
+    output = output.replace(/{%IMAGE%}/g, product.image);
+    output = output.replace(/{%FROM%}/g, product.from);
+    output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
+    output = output.replace(/{%PRICE%}/g, product.price);
+    output = output.replace(/{%DESCRIPTION%}/g, product.description);
+    output = output.replace(/{%ID%}/g, product.id);
+    if (!product.organic) output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
+    return output;
+}
+
 //though it is a sync way we may think its block the execution but it is a top level code and top level code execution once in the beginning so we use sync version of reading data so that we can store it in a variable
+const tempOverView = fs.readFileSync(`${__dirname}/templates/template-overview.html`, 'utf-8');
+const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`, 'utf-8');
+const tempProduct = fs.readFileSync(`${__dirname}/templates/template-product.html`, 'utf-8');
 const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
 const dataObj = JSON.parse(data);
+
 
 // to make a server
 //1. to create a server then start a server
 //createserver has a callback function which is fired of each time server has a request
 const server = http.createServer((req, res) => {
     // console.log(req);//get request object in terminal
-    console.log(req.url);
+    // console.log(req.url);//it gives the entire url
+    // console.log(url.parse(req.url, true));// by this we get query string after url, gives true so that parse the query into an object
+    //get the query and pathname from this object
+    const { query, pathname } = url.parse(req.url, true);
+
     //routing has no relation in file like if we write in browser /any file name that will not open any file in browser for this we have need another special technique
     //url module parse the parameter value into a nicely formatted object
     //implementing routing
-    const pathName = req.url;
-    if (pathName === '/' || pathName === '/overview') {
-        res.end('Hello from the Overview!');
-    } else if (pathName === '/product') {
-        res.end('Hello from the Product Page!');
+    // const pathName = req.url;
+    //Overview Page
+    if (pathname === '/' || pathname === '/overview') {
+        //now we have to read the template overview but its better to do this in the beginning
+        res.writeHead(200, {
+            'Content-type': 'text/html',
+        });
+        const CardHtml = dataObj.map(el => replaceTemplate(tempCard, el)).join('')
+        // console.log(CardHtml);
+        const output = tempOverView.replace('{%PRODUCT_CARDS%}', CardHtml)
+        res.end(output)
+
+        // res.end('Hello from the Overview!');
     }
+    //product page
+    else if (pathname === '/product') {
+        res.writeHead(200, {
+            'Content-type': 'text/html',
+        });
+        console.log(query);
+        const product = dataObj[query.id]
+        // console.log(product);
+        const output = replaceTemplate(tempProduct, product)
+        // res.end('Hello from the Product Page!');
+        res.end(output);
+    }
+
     // . means where the script is running i mean index.js and __dirname is where the current file is located
-    else if (pathName === '/api') {
+    //API
+    else if (pathname === '/api') {
         //res.end need string not object, so we pass data cg it is in json format that is string
         //now we have to tell the browser that we are sending json
         res.writeHead(200, {
@@ -60,7 +102,9 @@ const server = http.createServer((req, res) => {
         //now there has a prb , each time a user hit the /api route file read again and send back response to the client, instead we can do just read the file once in the beginning and whenever user hit the route send back the data without reading the file once again
         //cg now each time when user hit the route then createserver will run and top level code execute and we get data once and the next time only create server will execute for another route but the file is already we read and store it in a variable data
         res.end(data);
-    } else {
+    }
+    //Not found
+    else {
         //for showing statuscode, header on console
         //http header is the piece of information that we are sending back as a response
         //there are many types of standard header
