@@ -117,7 +117,7 @@ const server = http.createServer((req, res) => {
         //there are many types of standard header
         //header and status code need declare bedore we send response
         res.writeHead(404, {
-            'Content-type': 'text/html', //by this a browser now expect html
+            'Content-type': "text/html", //by this a browser now expect html
             'my-own-header': 'hello',
         });
         res.end('<h1>Page not found!<h1>');
