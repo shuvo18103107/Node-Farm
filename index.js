@@ -2,9 +2,12 @@
 const fs = require('fs');
 const http = require('http');
 const url = require('url');
+const slugify = require('slugify')
 const replaceTemplate = require('./Modules/replaceTemplate');
+
+//slug is like the query part and we can define it in some meaningful string ex; product/?id=0 we can now use product/fresh-avocado
 //................ Files..................
-//reading and writing files in sync way (blocking)
+//reading and w riting files in sync way (blocking)
 // //read a file
 // const textIn = fs.readFileSync('./txt/input.txt', 'utf-8');
 // console.log(textIn);
@@ -47,6 +50,11 @@ const tempProduct = fs.readFileSync(
 );
 const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
 const dataObj = JSON.parse(data);
+const slug = dataObj.map(el => slugify(el.productName, { lower: true }))
+console.log(slug);
+console.log(slugify('Fresh Avocados', {
+    lower: true
+}));
 
 // to make a server
 //1. to create a server then start a server
@@ -91,7 +99,7 @@ const server = http.createServer((req, res) => {
     }
 
     // . means where the script is running i mean index.js and __dirname is where the current file is located
-    //API
+    //API.
     else if (pathname === '/api') {
         //res.end need string not object, so we pass data cg it is in json format that is string
         //now we have to tell the browser that we are sending json
